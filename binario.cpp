@@ -1,9 +1,3 @@
-/*
-4 - Inserção ordenada
-5 - Remoção
-6 - Pesquisa
-8 - Impressão dos registros livre
-*/
 #include<iostream>
 #include<fstream>
 
@@ -26,7 +20,7 @@ void inicializar(fstream &arq)
 {
     /*Inicializando a estrutura*/
 
-    cout<<endl<<endl<<"Inicializando a estrutura de registros"<<endl<<endl;
+    //cout<<endl<<endl<<"Inicializando a estrutura de registros"<<endl<<endl;
 
     dado d;
     /*Posicionando o ponteiro de escrita no in�cio do arquivo*/
@@ -130,15 +124,59 @@ void imprimirSeq(fstream &arq)
     while(r.reg.next!=-1);
 }
 
+void imprimir_free(fstream &arq)
+{
+    dado c,r;
+
+    cout<<endl<<endl<<"Imprimindo registros validos"<<endl;
+
+    /*posicionando o ponteiro de leitura no in�cio do arquivo*/
+    arq.seekg (0,arq.beg);
+
+    /*lendo o cabe�alho*/
+    arq.read((char*)&c, sizeof(c));
+    /*imprimindo o cabe�alho*/
+    cout<<"cab\n";
+    cout<<"Quant: "<<c.cab.quant<<endl;
+    cout<<"First: "<<c.cab.first<<endl;
+    cout<<"Last: "<<c.cab.last<<endl;
+    cout<<"Free: "<<c.cab.free<<endl;
+
+    /*lendo e imprimindo os registros com dados*/
+    cout<<"\nRegistros\n\n";
+    if(c.cab.free==-1)
+    {
+        cout<<"N�o existe registros livres";
+        return;
+    }
+
+    /*posiciona o ponteiro de leitura no primeiro registro apontado por first*/
+    arq.seekg(c.cab.free*sizeof(c),arq.beg);
+    int pos = r.reg.next;
+    do
+    {
+        /*lendo o registro*/
+        arq.read((char*)&r, sizeof(r));
+        pos = r.reg.next;
+        /*imprimindo o registro*/
+        cout<<"Chave: "<<r.reg.chave<<endl;
+        cout<<"Next: "<<r.reg.next<<endl;
+        cout<<"Prev: "<<r.reg.prev<<endl<<endl;
+        /*localizando o pr�ximo registro*/
+        if(r.reg.next!=-1)
+            arq.seekg(r.reg.next*sizeof(r),arq.beg);
+    }
+    while(r.reg.next!=-1);
+}
 
 void insere(fstream &arq, dado d)
 {
     dado aux, c;
     int free;
-    cout<<endl<<endl<<"Inserindo registros"<<endl;
+    //cout<<endl<<endl<<"Inserindo registros"<<endl;
 
     /*posiciona o ponteiro de leitura no in�cio do arquivo*/
-    arq.seekg(0,arq.beg);
+    arq.seekg (0,arq.beg);
 
     /*le o cabe�alho*/
     arq.read((char*)&c, sizeof(c));
@@ -169,7 +207,7 @@ void insere(fstream &arq, dado d)
         bob.reg.next=c.cab.free;
 
         /*posiciona o ponteiro de escrita para o registro que vai apontar para o novo registro aux*/
-        arq.seekp(sizeof(aux)*aux.reg.prev,arq.beg);
+        arq.seekp (sizeof(aux)*aux.reg.prev,arq.beg);
         /*gravando o registro*/
         arq.write((char*)&bob, sizeof(bob));
     }
@@ -185,8 +223,9 @@ void insere(fstream &arq, dado d)
     c.cab.quant++;
     c.cab.last=c.cab.free;
     c.cab.free=free;
+
     /*posiciona o ponteiro de escrita no in�cio do arquivo*/
-    arq.seekp(0,arq.beg);
+    arq.seekp (0,arq.beg);
     /*gravado o cabe�alho*/
     arq.write((char*)&c, sizeof(c));
 }
@@ -194,48 +233,61 @@ void insere(fstream &arq, dado d)
 int pesquisa(fstream &arq, int chave, bool ordenada = false)
 {
     dado c, aux;
-    int pos;
+    int indice;
     arq.seekg(0,arq.beg);//le o cabeçalho
     arq.read((char*)&c, sizeof(c));
-    pos = c.cab.first;
-    arq.seekg(sizeof(aux)*pos,arq.beg);//le o primeiro da lista
+    indice = c.cab.first;
+    arq.seekg(sizeof(aux)*indice,arq.beg);//le o primeiro da lista
     arq.read((char*)&aux, sizeof(aux));
-    if(ordenada){//paremetro opcional da função para otimização de pesquisa
-        while(aux.reg.chave < chave && aux.reg.next != -1){//percorre o vetor até achar a chave ou até o ultimo registro
-            pos = aux.reg.next;
-            arq.seekg(sizeof(aux)*aux.reg.next,arq.beg);
+
+
+    if(ordenada){//paremetro opcional da função para otimização da pesquisa
+        while(aux.reg.chave < chave && aux.reg.next != -1){//percorre o vetor enquanto a chave atual é menor que a chave que estamos buscando ou até o ultimo registro
+            indice = aux.reg.next;
+            arq.seekg(sizeof(aux)*aux.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
             arq.read((char*)&aux, sizeof(aux));
         }
-        if(aux.reg.chave == chave)//encontrou
-            return pos;
+        if(aux.reg.chave == chave)
+            return indice;
         return -1;
     }
     else{
-        while(aux.reg.chave != chave && aux.reg.next != -1){//percorre o vetor até achar a chave ou até o ultimo registro
-            pos = aux.reg.next;
-            arq.seekg(sizeof(aux)*aux.reg.next,arq.beg);
+        while(aux.reg.next != -1){//percorre o vetor até achar a chave ou até o ultimo registro
+            indice = aux.reg.next;
+            arq.seekg(sizeof(aux)*aux.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
             arq.read((char*)&aux, sizeof(aux));
+            if(aux.reg.chave == chave){
+                return indice;
+            }
         }
-        if(pos == aux.cab.last+1)//chegou ao registro da lista
-            if(aux.reg.chave != chave)
-                return -1;
-        return pos;
+        return -1;
     }
 }
 
 void remover(fstream &arq, int chave)
 {
-    dado c;
     int indice = pesquisa(arq, chave); //encontra onde esta o arquivo a ser apagado
     if(indice != -1){ //se encontrar o registro a ser apagado
-        dado apg, prev, next;
+        dado c, apg, prev, next;
         arq.seekg(sizeof(apg)*indice,arq.beg);//posiciona o ponteiro no registro que será apagado
         arq.read((char*)&apg, sizeof(apg));
-
         arq.seekg(0,arq.beg); //le o cabeçalho
         arq.read((char*)&c, sizeof(c));
 
-        if(c.cab.quant > 1){//se este não for o unico registro da lista
+        if(c.cab.quant == 1){ //se é o unico registro dada lista
+            c.cab.quant = 0;
+            c.cab.first = c.cab.last = apg.reg.prev = -1;
+            apg.reg.next = c.cab.free;
+            apg.reg.chave = 0;
+            c.cab.free = indice;
+
+            arq.seekp(sizeof(apg)*indice,arq.beg);//escreve os novos dados do registro apagado no arquivo
+            arq.write((char*)&apg, sizeof(apg));
+            arq.seekp(0,arq.beg);//escreve as novas informações do cabeçalho no arquivo
+            arq.write((char*)&c, sizeof(c));
+        }
+
+        else{//se este não for o unico registro da lista
             if(apg.reg.prev != -1 && apg.reg.next != -1){//se o registro possui um anterior e um sucessor
                 arq.seekg(sizeof(prev)*apg.reg.prev,arq.beg);//posiciona o ponteiro no registro anterior
                 arq.read((char*)&prev, sizeof(prev));
@@ -248,6 +300,7 @@ void remover(fstream &arq, int chave)
                 arq.seekp(sizeof(prev)*apg.reg.prev,arq.beg);
                 arq.write((char*)&prev, sizeof(prev));
             }
+
             else if(apg.reg.prev == -1){//se é o primeiro da lista
                 arq.seekg(sizeof(next)*apg.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
                 arq.read((char*)&next, sizeof(next));
@@ -256,7 +309,8 @@ void remover(fstream &arq, int chave)
                 arq.write((char*)&next, sizeof(next));
                 c.cab.first = apg.reg.next;//altera o endereço do primeiro registro
             }
-            else if(apg.reg.next == -1){//se é o ultimo da lista
+
+            else{//se é o ultimo da lista
                 arq.seekg(sizeof(prev)*apg.reg.prev,arq.beg);//posiciona o ponteiro no registro anterior
                 arq.read((char*)&prev, sizeof(prev));
                 prev.reg.next = -1;
@@ -264,23 +318,83 @@ void remover(fstream &arq, int chave)
                 arq.write((char*)&prev, sizeof(prev));
                 c.cab.last = apg.reg.prev;//altera o endereço do ultimo registro
             }
+
+            //tornando o registro free
+            apg.reg.chave = 0; //"limpando" a memória
+            apg.reg.prev = -1;
+            apg.reg.next = c.cab.free; //referenciando o proximo registro livre
+            c.cab.free = indice; //declarando este registro como o primeiro registro livre no cabeçalho
+            --c.cab.quant;
+            arq.seekp(sizeof(apg)*indice,arq.beg);//escreve os novos dados do registro apagado no arquivo
+            arq.write((char*)&apg, sizeof(apg));
+            arq.seekp(0,arq.beg);//escreve as novas informações do cabeçalho no arquivo
+            arq.write((char*)&c, sizeof(c));
         }
-
-        //tornando o registro free
-        apg.reg.chave = 0; //"limpando" a memória
-        apg.reg.prev = -1;
-        apg.reg.next = c.cab.free; //referenciando o proximo registro livre
-        arq.seekp(sizeof(apg)*indice,arq.beg);//escreve os novos dados do registro apagado no arquivo
-        arq.write((char*)&apg, sizeof(apg));
-
-        c.cab.free = indice; //declarando este registro como o primeiro registro livre no cabeçalho
-        c.cab.quant = c.cab.quant-1;
-        arq.seekp(0,arq.beg);//escreve as novas informações do cabeçalho no arquivo
-        arq.write((char*)&c, sizeof(c));
-
     }
 }
+void insere_ordenada(fstream &arq, dado d)
+{
+    dado maior, c, prev, free;
+    int indice;
 
+    arq.seekg(0,arq.beg);// le o cabeçalho
+    arq.read((char*)&c, sizeof(c));
+
+    if(c.cab.quant<1)// se é o primeiro a ser inserido então usamos inserção simples
+        insere(arq, d);
+    else{
+        arq.seekg(sizeof(maior)*c.cab.first,arq.beg);//posiciona o ponteiro no primeiro registro da lista
+        arq.read((char*)&maior, sizeof(maior));
+        arq.seekg(sizeof(free)*c.cab.free,arq.beg);//posiciona o ponteiro no primeiro elemento free
+        arq.read((char*)&free, sizeof(free));
+        free.reg.chave = d.reg.chave;
+        indice = c.cab.first;
+        while(maior.reg.chave < d.reg.chave && maior.reg.next != -1){//percorre o vetor até achar uma chave maior(ou igual) à chave a ser iserida
+            indice = maior.reg.next;
+            arq.seekg(sizeof(maior)*maior.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
+            arq.read((char*)&maior, sizeof(maior));
+        }
+        if(maior.reg.next == -1 && maior.reg.chave < free.reg.chave){ //se é o ultimo da lista
+            insere(arq, d);
+        }
+        else if(maior.reg.prev == -1){ //se é o primeiro da lista
+            free.reg.prev = -1;
+            free.reg.next = indice;
+            maior.reg.prev = c.cab.free;
+            c.cab.first = c.cab.free;
+            maior.reg.prev = c.cab.first;
+            c.cab.free = aux;
+            ++c.cab.quant;
+            arq.seekp(sizeof(free)*c.cab.first,arq.beg);//escreve os novos dados do registro apagado no arquivo
+            arq.write((char*)&free, sizeof(free));
+            arq.seekp(sizeof(maior)*indice,arq.beg);//reescreve os dados alterados
+            arq.write((char*)&maior, sizeof(maior));
+            arq.seekp(0,arq.beg);//escreve as novas informações do cabeçalho no arquivo
+            arq.write((char*)&c, sizeof(c));
+        }
+        else{//se for no meio da lista
+            arq.seekg(sizeof(prev)*maior.reg.prev,arq.beg);//posiciona o ponteiro no registro anterior
+            arq.read((char*)&prev, sizeof(prev));
+            int p, n;
+            p = maior.reg.prev;
+            n = prev.reg.next;
+            maior.reg.prev = c.cab.free;
+            prev.reg.next = c.cab.free;
+            c.cab.free = free.reg.next;
+            ++c.cab.quant;
+            free.reg.prev = p;
+            free.reg.next = n;
+            arq.seekp(sizeof(free)*maior.reg.prev,arq.beg);//escreve os novos dados do registro inserido
+            arq.write((char*)&free, sizeof(free));
+            arq.seekp(sizeof(prev)*free.reg.prev,arq.beg);//atualiza os dados do anterior
+            arq.write((char*)&prev, sizeof(prev));
+            arq.seekp(sizeof(maior)*free.reg.next,arq.beg);//atualiza os dados do sucessor
+            arq.write((char*)&maior, sizeof(maior));
+            arq.seekp(0,arq.beg);//escreve as novas informações do cabeçalho no arquivo
+            arq.write((char*)&c, sizeof(c));
+        }
+    }
+}
 
 
 
@@ -305,26 +419,30 @@ int main()
     /*lendo os dados para o novo registro*/
     cout<<"Inserindo novo registro:\nDigite a chave: ";
     cin>>d.reg.chave;
+    //d.reg.chave = 3;
+    insere_ordenada(arq,d);
+
+    cout<<"\nInserindo novo registro:\nDigite a chave: ";
+    cin>>d.reg.chave;
     //d.reg.chave = 1;
-    insere(arq,d);
+    insere_ordenada(arq,d);
+    //imprimir(arq);
+    //imprimirSeq(arq);
 
     cout<<"\nInserindo novo registro:\nDigite a chave: ";
     cin>>d.reg.chave;
     //d.reg.chave = 2;
-    insere(arq,d);
-
-    cout<<"\nInserindo novo registro:\nDigite a chave: ";
-    cin>>d.reg.chave;
-    //d.reg.chave = 3;
-    insere(arq,d);
-
-    cout << endl;
-    cout << endl;
-
-    remover(arq, 2);
-
-    imprimirSeq(arq);
+    insere_ordenada(arq,d);
     imprimir(arq);
+    //imprimirSeq(arq);
+
+    cout << endl;
+    cout << endl;
+
+    //remover(arq, 2);
+
+    //imprimirSeq(arq);
+    //imprimir(arq);
 
     arq.close();
     return 0;
