@@ -9,7 +9,7 @@ union dado
 {
     struct
     {
-        int quant, first, last, free;
+        int quant, first, last, free, size;
     } cab;//cabeçalho
     struct
     {
@@ -32,6 +32,7 @@ void inicializar(fstream &arq)
     d.cab.first=-1;
     d.cab.last=-1;
     d.cab.free=1;
+    d.cab.size = tamanho;
 
     /*Gravando o cabe�alho*/
     arq.write((char*)&d, sizeof(d));
@@ -70,13 +71,13 @@ void imprimir(fstream &arq)
 
     /*lendo e imprimindo os 8 registros*/
     cout<<"Registros\n";
-    for (int i = 1; i <= tamanho; i++)
+    int tam = d.cab.size;
+    for (int i = 1; i <= tam; i++)
     {
         arq.read((char*)&d, sizeof(d));
         cout<<i<<"- Chave: "<<d.reg.chave<<endl;
         cout<<i<<"- Next: "<<d.reg.next<<endl;
         cout<<i<<"- Prev: "<<d.reg.prev<<endl<<endl;
-
     }
 }
 
@@ -147,7 +148,7 @@ void imprimir_free(fstream &arq)
     cout<<"\nRegistros\n\n";
     if(c.cab.free==-1)
     {
-        cout<<"N�o existe registros livres";
+        cout<<"Nao existe registros livres"<<endl;
         return;
     }
 
@@ -170,7 +171,7 @@ void imprimir_free(fstream &arq)
     while(r.reg.next!=-1);
 }
 
-void insere(fstream &arq, dado d)
+bool insere(fstream &arq, dado d)
 {
     dado aux, c;
     int free;
@@ -181,6 +182,10 @@ void insere(fstream &arq, dado d)
 
     /*le o cabe�alho*/
     arq.read((char*)&c, sizeof(c));
+
+    if(c.cab.free == -1){ 
+        return false;
+    }
 
     /*posiciona o ponteiro de leitura na primeira posi��o livre no arquivo*/
     arq.seekg(sizeof(c)*c.cab.free,arq.beg);
@@ -228,6 +233,7 @@ void insere(fstream &arq, dado d)
     arq.seekp (0,arq.beg);
     /*gravado o cabe�alho*/
     arq.write((char*)&c, sizeof(c));
+    return true;
 }
 
 int pesquisa(fstream &arq, int chave, bool ordenada = false)
@@ -253,12 +259,15 @@ int pesquisa(fstream &arq, int chave, bool ordenada = false)
     }
     else{
         while(aux.reg.next != -1){//percorre o vetor até achar a chave ou até o ultimo registro
-            indice = aux.reg.next;
-            arq.seekg(sizeof(aux)*aux.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
-            arq.read((char*)&aux, sizeof(aux));
             if(aux.reg.chave == chave){
                 return indice;
             }
+            indice = aux.reg.next;
+            arq.seekg(sizeof(aux)*aux.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
+            arq.read((char*)&aux, sizeof(aux));
+        }
+        if(aux.reg.chave == chave){
+            return indice;
         }
         return -1;
     }
@@ -332,13 +341,17 @@ void remover(fstream &arq, int chave)
         }
     }
 }
-void insere_ordenada(fstream &arq, dado d)
+bool insere_ordenada(fstream &arq, dado d)
 {
     dado maior, c, prev, free;
     int indice, aux;
 
     arq.seekg(0,arq.beg);// le o cabeçalho
     arq.read((char*)&c, sizeof(c));
+
+    if(c.cab.free == -1){
+        return false;
+    }
 
     if(c.cab.quant<1)// se é o primeiro a ser inserido então usamos inserção simples
         insere(arq, d);
@@ -395,6 +408,7 @@ void insere_ordenada(fstream &arq, dado d)
             arq.write((char*)&c, sizeof(c));
         }
     }
+    return true;
 }
 
 
@@ -406,62 +420,83 @@ int main()
     string nome = "pagina.dat";
     fstream arq;
 
-    
-    if(!arq.is_open())
-    {
-       arq.open(nome,ios::binary| fstream::in | fstream::out|fstream::trunc );
-       if(!arq.is_open())
+
+    cout << "Digite: \n1 - Ler um arquivo existente\n2 - Criar um arquivo\n";
+    cin>>menu;
+    if(menu == 1){
+        cout << "Digite o nome do arquivo\n";
+        cin >> nome;
+        if(!arq.is_open())
         {
-            cout<<"Erro ao abrir o arquivo!!";
-            return 0;
+            arq.open(nome,ios::binary| fstream::in | fstream::out);
+            if(!arq.is_open())
+            {
+                cout<<"Erro ao abrir o arquivo!!";
+                return 0;
+            }
         }
     }
-    /*1 - Definir a estrutura Registro
-    2 - Inicialização
-    3 - Inserção
-    4 - Inserção ordenada
-    5 - Remoção
-    6 - Pesquisa
-    7 - Impressão dos registros inseridos
-    8 - Impressão dos registros livre
-    9 - Impressão da estrutura
-    */
+    else{
+        cout << "Digite o nome do arquivo\n";
+        cin >> nome;
+        cout << "Defina o tamanho do Registro: ";
+        cin >> tamanho;
+        cout << "Registro com tamanho = " << tamanho << endl;
+        if(!arq.is_open())
+        {
+            arq.open(nome,ios::binary| fstream::in | fstream::out|fstream::trunc );
+            if(!arq.is_open())
+            {
+                cout<<"Erro ao abrir o arquivo!!";
+                return 0;
+            }
+        }
+    }
+    if(menu==2){
+        cout << "Programa incializado" << endl;
+        inicializar(arq);
+    }
 
-   while(cin>>menu){
+    menu = 777;
+   while(menu!=0){
+    cout << "------------------------------------------------------" <<endl;
+    cout << "1 - Insercao"<<endl<<
+    "2 - Insercao ordenada"<<endl<<
+    "3 - Remocao"<<endl<<
+    "4 - Pesquisa" <<endl<<
+    "5 - Impressao dos registros inseridos" <<endl<<
+    "6 - Impressao dos registros livre" <<endl<<
+    "7 - Impressao da estrutura" << endl << 
+    "0 - Finalizar programa" << endl;
+    cin>>menu;
+
+    cout << "------------------------------------------------------" <<endl;
+
+
     switch (menu){
         case 1:
-            cout << "Defina o tamanho da estrutura Registro: ";
-            cin >> tamanho;
-            cout << "Registro com tamanho = " << tamanho << endl;
+            cout << "Digite a chave que queira inserir: ";
+            cin>>d.reg.chave;
+            if(insere(arq, d)) cout << "Chave " << d.reg.chave << " inserida" <<  endl;
+            else cout << "Arquivo sem espaco" << endl;
             break;
-        
+
         case 2:
-            cout << "Programa incializado" << endl;
-            inicializar(arq);
+            cout << "Digite a chave que queira inserir de forma ordenada: ";
+            cin>>d.reg.chave;
+            if(insere_ordenada(arq, d)) cout << "Chave " << d.reg.chave << " inserida" <<  endl;
+            else cout << "Arquivo sem espaco" << endl;
             break;
 
         case 3:
-            cout << "Digite a chave que queira inserir: ";
-            cin>>d.reg.chave;
-            cout << "Chave " << d.reg.chave << " inserida" <<  endl;
-            insere(arq, d);
-            break;
-
-        case 4:
-            cout << "Digite a chave que queira inserir de forma ordenada: ";
-            cin>>d.reg.chave;
-            cout << d.reg.chave << " inserido"<< endl;
-            insere_ordenada(arq, d);
-            break;
-
-        case 5:
             cout << "Digite a chave que queira remover: ";
             cin>>chave;
-            cout << "Chave " << chave << " removida" << endl;
+            if(pesquisa(arq, chave) != -1)  cout << "Chave " << chave << " removida" << endl;
+            else cout << "Chave nao encontrada" <<endl;
             remover(arq, chave);
             break;
 
-        case 6:
+        case 4:
             cout << "Digite o valor para pesquisar: ";
             cin >> chave;
             cout << endl;
@@ -469,14 +504,18 @@ int main()
             else cout << "Valor se encontra na posicao: " << pesquisa(arq, chave) << endl;
             break;
 
-        case 7:
+        case 5:
             cout << "Sequencia: " <<endl;
             imprimirSeq(arq);
             break;
 
-        case 8:
+        case 6:
             cout << "Sequencia free: " <<endl;
             imprimir_free(arq);
+            break;
+
+        case 7:
+            imprimir(arq);
             break;
 
         case 0: 
