@@ -420,12 +420,13 @@ int main()
     string nome = "pagina.dat";
     fstream arq;
 
-
-    cout << "Digite: \n1 - Ler um arquivo existente\n2 - Criar um arquivo\n";
+    cout << "Digite: \n(1) Ler um arquivo existente\n(2) Criar um arquivo\n#";
     cin>>menu;
+    cout << endl;
     if(menu == 1){
-        cout << "Digite o nome do arquivo\n";
+        cout << "Digite o nome do arquivo: ";
         cin >> nome;
+        cout << endl;
         if(!arq.is_open())
         {
             arq.open(nome,ios::binary| fstream::in | fstream::out);
@@ -437,14 +438,14 @@ int main()
         }
     }
     else{
-        cout << "Digite o nome do arquivo\n";
+        cout << "Digite o nome do arquivo: ";
         cin >> nome;
-        cout << "Defina o tamanho do Registro: ";
+        cout << "\nDefina o tamanho do Registro: ";
         cin >> tamanho;
         cout << "Registro com tamanho = " << tamanho << endl;
         if(!arq.is_open())
         {
-            arq.open(nome,ios::binary| fstream::in | fstream::out|fstream::trunc );
+            arq.open(nome,ios::binary| fstream::in | fstream::out|fstream::trunc);
             if(!arq.is_open())
             {
                 cout<<"Erro ao abrir o arquivo!!";
@@ -455,9 +456,9 @@ int main()
     if(menu==2){
         cout << "Programa incializado" << endl;
         inicializar(arq);
+        cout << endl;
     }
 
-    menu = 777;
    while(menu!=0){
     cout << "------------------------------------------------------" <<endl;
     cout << "1 - Insercao"<<endl<<
@@ -467,7 +468,7 @@ int main()
     "5 - Impressao dos registros inseridos" <<endl<<
     "6 - Impressao dos registros livre" <<endl<<
     "7 - Impressao da estrutura" << endl << 
-    "0 - Finalizar programa" << endl;
+    "0 - Finalizar programa" << endl << "#";
     cin>>menu;
 
     cout << "------------------------------------------------------" <<endl;
