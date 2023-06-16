@@ -1,3 +1,10 @@
+/**
+ * Nomes: Gabriel Bragança de Oliveira          -           RA: 2022005455
+ *        Pedro Rodrigues Souza                 -           RA: 2020013082
+*/
+
+
+
 #include<iostream>
 #include<fstream>
 
