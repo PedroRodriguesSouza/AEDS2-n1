@@ -4,7 +4,6 @@
 */
 #include<iostream>
 #include<fstream>
-
 using namespace std;
 int tamanho;
 
@@ -416,7 +415,6 @@ bool insere_ordenada(fstream &arq, dado d)
 }
 
 
-
 int main()
 {
     int menu, chave;
@@ -464,7 +462,7 @@ int main()
     }
 
    while(menu!=0){
-    cout << "------------------------------------------------------" <<endl;
+    cout << "#------------------------------------------------------#" <<endl;
     cout << "1 - Insercao"<<endl<<
     "2 - Insercao ordenada"<<endl<<
     "3 - Remocao"<<endl<<
@@ -475,7 +473,7 @@ int main()
     "0 - Finalizar programa" << endl << "#";
     cin>>menu;
 
-    cout << "------------------------------------------------------" <<endl;
+    cout << "#------------------------------------------------------#" <<endl;
 
 
     switch (menu){
