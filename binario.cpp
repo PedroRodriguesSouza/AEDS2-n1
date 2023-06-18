@@ -346,8 +346,7 @@ void remover(fstream &arq, int chave)
 }
 bool insere_ordenada(fstream &arq, dado d)
 {
-    dado maior, c, prev, free;
-    int indice, aux;
+    dado c;
 
     arq.seekg(0,arq.beg);// le o cabeçalho
     arq.read((char*)&c, sizeof(c));
@@ -358,28 +357,35 @@ bool insere_ordenada(fstream &arq, dado d)
 
     if(c.cab.quant<1)// se é o primeiro a ser inserido então usamos inserção simples
         insere(arq, d);
+
     else{
+        dado maior;
+        int indice;
         arq.seekg(sizeof(maior)*c.cab.first,arq.beg);//posiciona o ponteiro no primeiro registro da lista
         arq.read((char*)&maior, sizeof(maior));
-        arq.seekg(sizeof(free)*c.cab.free,arq.beg);//posiciona o ponteiro no primeiro elemento free
-        arq.read((char*)&free, sizeof(free));
-        free.reg.chave = d.reg.chave;
         indice = c.cab.first;
+
         while(maior.reg.chave < d.reg.chave && maior.reg.next != -1){//percorre o vetor até achar uma chave maior(ou igual) à chave a ser iserida
             indice = maior.reg.next;
             arq.seekg(sizeof(maior)*maior.reg.next,arq.beg);//posiciona o ponteiro no proximo registro
             arq.read((char*)&maior, sizeof(maior));
         }
+        dado free;
+        arq.seekg(sizeof(free)*c.cab.free,arq.beg);//posiciona o ponteiro no primeiro elemento free
+        arq.read((char*)&free, sizeof(free));
+        free.reg.chave = d.reg.chave;
+
         if(maior.reg.next == -1 && maior.reg.chave < free.reg.chave){ //se é o ultimo da lista
             insere(arq, d);
         }
+
         else if(maior.reg.prev == -1){ //se é o primeiro da lista
+            int aux;
             aux = free.reg.next;
             free.reg.prev = -1;
             free.reg.next = indice;
             maior.reg.prev = c.cab.free;
             c.cab.first = c.cab.free;
-            maior.reg.prev = c.cab.first;
             c.cab.free = aux;
             ++c.cab.quant;
             arq.seekp(sizeof(free)*c.cab.first,arq.beg);//escreve os novos dados do registro apagado no arquivo
@@ -389,7 +395,9 @@ bool insere_ordenada(fstream &arq, dado d)
             arq.seekp(0,arq.beg);//escreve as novas informações do cabeçalho no arquivo
             arq.write((char*)&c, sizeof(c));
         }
+
         else{//se for no meio da lista
+            dado prev;
             arq.seekg(sizeof(prev)*maior.reg.prev,arq.beg);//posiciona o ponteiro no registro anterior
             arq.read((char*)&prev, sizeof(prev));
             int p, n;
